@@ -35,7 +35,15 @@ const { findAudioFiles } = require("../library-scan");
     if (!result.rows) throw new Error(`Import produced no rows: ${JSON.stringify(result)}`);
 
     const firstRow = window.locator("#trackList tr").first();
-    await firstRow.dragTo(window.locator(".deck-b"));
+    const rowBox = await firstRow.boundingBox();
+    const deckBBox = await window.locator(".deck-b").boundingBox();
+    await window.mouse.move(rowBox.x + rowBox.width / 3, rowBox.y + rowBox.height / 2);
+    await window.mouse.down();
+    await window.mouse.move(rowBox.x + rowBox.width / 3, rowBox.y - 20, { steps: 4 });
+    await window.waitForTimeout(100);
+    await window.mouse.move(deckBBox.x + deckBBox.width / 2, deckBBox.y + deckBBox.height / 2, { steps: 20 });
+    await window.waitForTimeout(100);
+    await window.mouse.up();
     const dragResult = await window.evaluate(() => ({
       overlay: document.body.classList.contains("dragging"),
       deckBTitle: document.querySelector(".deck-b [data-role=title]")?.textContent,

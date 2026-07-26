@@ -16,7 +16,9 @@
     sort: "title",
     focusedDeck: "a",
     mediaRecorder: null,
-    recordedChunks: []
+    recordedChunks: [],
+    draggingTrackId: null,
+    libraryRenderPending: false
   };
 
   const $ = (selector, root = document) => root.querySelector(selector);
@@ -268,7 +270,7 @@
     const audio = new Audio(track.url);
     audio.addEventListener("loadedmetadata", () => {
       track.duration = Number.isFinite(audio.duration) ? audio.duration : 0;
-      renderLibrary();
+      requestLibraryRender();
     }, { once: true });
   }
 
@@ -283,7 +285,7 @@
       track.bpm = analysis.bpm;
       track.energy = analysis.energy;
       track.key = estimateKey(buffer);
-      renderLibrary();
+      requestLibraryRender();
       [decks.a, decks.b].filter(deck => deck.track?.id === track.id).forEach(deck => {
         deck.baseBpm = track.bpm || 0;
         deck.waveform = track.waveform;
@@ -553,9 +555,17 @@
       : `${tracks.length} track${tracks.length === 1 ? "" : "s"} · drag a row onto a deck`;
     $$("tr[data-track-id]", trackList).forEach(row => {
       row.addEventListener("dragstart", event => {
+        state.draggingTrackId = row.dataset.trackId;
         event.dataTransfer.effectAllowed = "copy";
         event.dataTransfer.setData("application/x-backspin-track", row.dataset.trackId);
         event.dataTransfer.setData("text/plain", row.dataset.trackId);
+      });
+      row.addEventListener("dragend", () => {
+        state.draggingTrackId = null;
+        if (state.libraryRenderPending) {
+          state.libraryRenderPending = false;
+          renderLibrary();
+        }
       });
       row.addEventListener("click", event => {
         if (event.target.closest("button")) return;
@@ -575,6 +585,14 @@
     $$("[data-load-b]", trackList).forEach(button => button.addEventListener("click", () => {
       loadTrack(decks.b, state.tracks.find(track => track.id === button.dataset.loadB));
     }));
+  }
+
+  function requestLibraryRender() {
+    if (state.draggingTrackId) {
+      state.libraryRenderPending = true;
+      return;
+    }
+    renderLibrary();
   }
 
   function updateCrossfader() {
