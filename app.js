@@ -53,13 +53,8 @@
         setStatus(detail ? `NO READABLE MUSIC FOUND · ${detail}` : "NO SUPPORTED MUSIC FOUND");
         return;
       }
-      const files = result.files.map(item => new File(
-        [item.data],
-        item.name,
-        { type: audioMimeType(item.name) }
-      ));
-      await addFiles(files);
-      if (result.skipped) setStatus(`${files.length} ADDED · ${result.skipped} UNREADABLE FILE${result.skipped === 1 ? "" : "S"} SKIPPED`);
+      await addNativeFiles(result.files);
+      if (result.skipped) setStatus(`${result.files.length} ADDED · ${result.skipped} UNREADABLE FILE${result.skipped === 1 ? "" : "S"} SKIPPED`);
     } catch (error) {
       console.error("Folder import failed", error);
       setStatus(`IMPORT FAILED · ${error.message || "COULD NOT READ MUSIC"}`);
@@ -154,8 +149,47 @@
         id: crypto.randomUUID(),
         file,
         url: URL.createObjectURL(file),
+        getArrayBuffer: () => file.arrayBuffer(),
         name: file.name,
         size: file.size,
+        title: metadata.title,
+        artist: metadata.artist,
+        duration: 0,
+        bpm: null,
+        key: "—",
+        energy: 0,
+        favorite: false,
+        selected: false,
+        buffer: null,
+        waveform: []
+      };
+      state.tracks.push(track);
+      probeDuration(track);
+      analyzeTrack(track);
+    }
+    renderLibrary();
+    setStatus(`${state.tracks.length} TRACKS READY`);
+  }
+
+  async function addNativeFiles(files) {
+    resumeAudio();
+    if (!files.length) return setStatus("NO AUDIO FILES FOUND");
+    setStatus(`ADDING ${files.length} TRACK${files.length === 1 ? "" : "S"}…`);
+    for (const item of files) {
+      const duplicate = state.tracks.some(track => track.name === item.name && track.size === item.size);
+      if (duplicate) continue;
+      const metadata = parseFilename(item.name);
+      const track = {
+        id: crypto.randomUUID(),
+        file: null,
+        url: item.url,
+        getArrayBuffer: async () => {
+          const response = await fetch(item.url);
+          if (!response.ok) throw new Error(`Could not read track (${response.status})`);
+          return response.arrayBuffer();
+        },
+        name: item.name,
+        size: item.size,
         title: metadata.title,
         artist: metadata.artist,
         duration: 0,
@@ -193,7 +227,7 @@
 
   async function analyzeTrack(track) {
     try {
-      const raw = await track.file.arrayBuffer();
+      const raw = await track.getArrayBuffer();
       const buffer = await audioContext.decodeAudioData(raw.slice(0));
       track.buffer = buffer;
       track.duration = buffer.duration;

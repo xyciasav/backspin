@@ -1,10 +1,25 @@
 "use strict";
 
-const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, net, protocol } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { pathToFileURL } = require("node:url");
+const crypto = require("node:crypto");
 const { findAudioFiles, isAudioPath } = require("./library-scan");
+
+protocol.registerSchemesAsPrivileged([{
+  scheme: "backspin-media",
+  privileges: {
+    standard: true,
+    secure: true,
+    supportFetchAPI: true,
+    stream: true,
+    corsEnabled: true
+  }
+}]);
+
+const mediaFiles = new Map();
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -90,12 +105,13 @@ ipcMain.on("updates:install", () => autoUpdater.quitAndInstall(false, true));
 async function readSelectedFiles(paths, root, warnings) {
   const settled = await Promise.allSettled(paths.map(async filePath => {
     const stat = await fs.stat(filePath);
-    const data = await fs.readFile(filePath);
+    const token = crypto.randomUUID();
+    mediaFiles.set(token, filePath);
     return {
       name: path.basename(filePath),
       size: stat.size,
       relativePath: root ? path.relative(root, filePath) : path.basename(filePath),
-      data: data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+      url: `backspin-media://track/${token}`
     };
   }));
   const files = settled.filter(item => item.status === "fulfilled").map(item => item.value);
@@ -108,6 +124,15 @@ async function readSelectedFiles(paths, root, warnings) {
 }
 
 app.whenReady().then(() => {
+  protocol.handle("backspin-media", request => {
+    const url = new URL(request.url);
+    const token = url.pathname.replace(/^\/+/, "");
+    const filePath = mediaFiles.get(token);
+    if (!filePath) return new Response("Track not found", { status: 404 });
+    return net.fetch(pathToFileURL(filePath).toString(), {
+      headers: request.headers
+    });
+  });
   const window = createWindow();
   configureUpdater(window);
   app.on("activate", () => {

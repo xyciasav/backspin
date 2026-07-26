@@ -32,6 +32,9 @@ jobs:
           node --check preload.js
           node --check library-scan.js
 
+      - name: Test desktop music import
+        run: npm run test:import
+
       - name: Build and publish installer
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
