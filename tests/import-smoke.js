@@ -59,12 +59,9 @@ const { findAudioFiles } = require("../library-scan");
 
     const gainKnob = window.locator(".deck-b [data-control=gain]");
     const knobBefore = Number(await gainKnob.inputValue());
-    const knobBox = await gainKnob.boundingBox();
-    await window.mouse.move(knobBox.x + knobBox.width - 2, knobBox.y + knobBox.height / 2);
-    await window.mouse.down();
-    await window.mouse.up();
+    await gainKnob.dispatchEvent("wheel", { deltaY: -100 });
     const knobAfter = Number(await gainKnob.inputValue());
-    if (knobAfter === knobBefore) throw new Error("Rotary knob pointer interaction did not change its value");
+    if (knobAfter === knobBefore) throw new Error("Rotary knob interaction did not change its value");
 
     console.log(JSON.stringify({ ok: true, ...result, internalDrag: "deck B", explicitLoad: "deck B", rotary: `${knobBefore}→${knobAfter}` }));
   } finally {
