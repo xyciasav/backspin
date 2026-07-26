@@ -105,7 +105,7 @@
     root.addEventListener("dragover", event => event.preventDefault());
     root.addEventListener("drop", event => {
       event.preventDefault();
-      const trackId = event.dataTransfer.getData("text/track-id");
+      const trackId = event.dataTransfer.getData("application/x-backspin-track") || event.dataTransfer.getData("text/plain");
       const track = state.tracks.find(item => item.id === trackId);
       if (track) loadTrack(deck, track);
     });
@@ -130,6 +130,53 @@
   }
 
   const decks = { a: makeDeck("a"), b: makeDeck("b") };
+
+  function setupRotaryControls() {
+    $$(".knob-control input, .big-knob input").forEach(input => {
+      let activePointer = null;
+      const render = () => {
+        const min = Number(input.min);
+        const max = Number(input.max);
+        const progress = (Number(input.value) - min) / (max - min);
+        input.style.setProperty("--knob-sweep", `${Math.max(0, Math.min(1, progress)) * 270}deg`);
+      };
+      const setFromPointer = event => {
+        const rect = input.getBoundingClientRect();
+        const dx = event.clientX - (rect.left + rect.width / 2);
+        const dy = event.clientY - (rect.top + rect.height / 2);
+        let angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+        if (angle > 180) angle -= 360;
+        angle = Math.max(-135, Math.min(135, angle));
+        const min = Number(input.min);
+        const max = Number(input.max);
+        const step = Number(input.step) || 1;
+        const raw = min + ((angle + 135) / 270) * (max - min);
+        input.value = Math.round(raw / step) * step;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+      input.addEventListener("pointerdown", event => {
+        activePointer = event.pointerId;
+        input.setPointerCapture(event.pointerId);
+        setFromPointer(event);
+        event.preventDefault();
+      });
+      input.addEventListener("pointermove", event => {
+        if (event.pointerId === activePointer) setFromPointer(event);
+      });
+      input.addEventListener("pointerup", event => {
+        if (event.pointerId === activePointer) activePointer = null;
+      });
+      input.addEventListener("wheel", event => {
+        event.preventDefault();
+        const step = Number(input.step) || 1;
+        const direction = event.deltaY < 0 ? 1 : -1;
+        input.value = Math.max(Number(input.min), Math.min(Number(input.max), Number(input.value) + direction * step));
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }, { passive: false });
+      input.addEventListener("input", render);
+      render();
+    });
+  }
 
   function resumeAudio() {
     if (audioContext.state !== "running") audioContext.resume();
@@ -497,7 +544,7 @@
         <td>${track.key}</td>
         <td>${formatTime(track.duration)}</td>
         <td><span class="energy">${[1,2,3,4,5].map(i => `<i class="${i <= track.energy ? "on" : ""}"></i>`).join("")}</span></td>
-        <td><button class="load-mini" data-load="${track.id}">LOAD</button></td>
+        <td class="load-actions"><button class="load-mini load-a" data-load-a="${track.id}" title="Load on deck A">A</button><button class="load-mini load-b" data-load-b="${track.id}" title="Load on deck B">B</button></td>
       </tr>`).join("");
     emptyState.hidden = state.tracks.length > 0;
     $("#trackCount").textContent = state.tracks.length;
@@ -505,7 +552,11 @@
       ? "Ranked by BPM, key, and energy against the focused deck"
       : `${tracks.length} track${tracks.length === 1 ? "" : "s"} · drag a row onto a deck`;
     $$("tr[data-track-id]", trackList).forEach(row => {
-      row.addEventListener("dragstart", event => event.dataTransfer.setData("text/track-id", row.dataset.trackId));
+      row.addEventListener("dragstart", event => {
+        event.dataTransfer.effectAllowed = "copy";
+        event.dataTransfer.setData("application/x-backspin-track", row.dataset.trackId);
+        event.dataTransfer.setData("text/plain", row.dataset.trackId);
+      });
       row.addEventListener("click", event => {
         if (event.target.closest("button")) return;
         state.tracks.forEach(track => track.selected = track.id === row.dataset.trackId);
@@ -518,8 +569,11 @@
       track.favorite = !track.favorite;
       renderLibrary();
     }));
-    $$("[data-load]", trackList).forEach(button => button.addEventListener("click", () => {
-      loadTrack(decks[state.focusedDeck], state.tracks.find(track => track.id === button.dataset.load));
+    $$("[data-load-a]", trackList).forEach(button => button.addEventListener("click", () => {
+      loadTrack(decks.a, state.tracks.find(track => track.id === button.dataset.loadA));
+    }));
+    $$("[data-load-b]", trackList).forEach(button => button.addEventListener("click", () => {
+      loadTrack(decks.b, state.tracks.find(track => track.id === button.dataset.loadB));
     }));
   }
 
@@ -611,7 +665,10 @@
     $("#libraryTitle").textContent = button.textContent.replace(/\d+$/, "").trim();
     renderLibrary();
   }));
-  window.addEventListener("dragover", event => { event.preventDefault(); document.body.classList.add("dragging"); });
+  window.addEventListener("dragover", event => {
+    event.preventDefault();
+    if ([...event.dataTransfer.types].includes("Files")) document.body.classList.add("dragging");
+  });
   window.addEventListener("dragleave", event => { if (!event.relatedTarget) document.body.classList.remove("dragging"); });
   window.addEventListener("drop", event => {
     document.body.classList.remove("dragging");
@@ -628,6 +685,7 @@
 
   updateCrossfader();
   updateFilter();
+  setupRotaryControls();
   Object.values(decks).forEach(drawWaveform);
   renderLibrary();
   meterLoop();

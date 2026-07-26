@@ -33,7 +33,32 @@ const { findAudioFiles } = require("../library-scan");
       firstTitle: document.querySelector("#trackList .title")?.textContent
     }));
     if (!result.rows) throw new Error(`Import produced no rows: ${JSON.stringify(result)}`);
-    console.log(JSON.stringify({ ok: true, ...result }));
+
+    const firstRow = window.locator("#trackList tr").first();
+    await firstRow.dragTo(window.locator(".deck-b"));
+    const dragResult = await window.evaluate(() => ({
+      overlay: document.body.classList.contains("dragging"),
+      deckBTitle: document.querySelector(".deck-b [data-role=title]")?.textContent,
+      firstTitle: document.querySelector("#trackList .title")?.textContent
+    }));
+    if (dragResult.overlay) throw new Error("Internal track drag triggered the file upload overlay");
+    if (dragResult.deckBTitle !== dragResult.firstTitle) throw new Error(`Drag did not load deck B: ${JSON.stringify(dragResult)}`);
+
+    await window.locator(".deck-b [data-action=eject]").click();
+    await window.locator("#trackList [data-load-b]").first().click();
+    const loadBTitle = await window.locator(".deck-b [data-role=title]").textContent();
+    if (loadBTitle !== result.firstTitle) throw new Error(`B load button targeted the wrong deck: ${loadBTitle}`);
+
+    const gainKnob = window.locator(".deck-b [data-control=gain]");
+    const knobBefore = Number(await gainKnob.inputValue());
+    const knobBox = await gainKnob.boundingBox();
+    await window.mouse.move(knobBox.x + knobBox.width - 2, knobBox.y + knobBox.height / 2);
+    await window.mouse.down();
+    await window.mouse.up();
+    const knobAfter = Number(await gainKnob.inputValue());
+    if (knobAfter === knobBefore) throw new Error("Rotary knob pointer interaction did not change its value");
+
+    console.log(JSON.stringify({ ok: true, ...result, internalDrag: "deck B", explicitLoad: "deck B", rotary: `${knobBefore}→${knobAfter}` }));
   } finally {
     await electronApp.close();
     if (temporaryFolder) await fs.rm(temporaryFolder, { recursive: true, force: true });
