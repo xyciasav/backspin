@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#090a0f">
+  <title>Backspin — Local DJ Mixer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Backspin home">
+        <span class="brand-mark">B/S</span>
+        <span>
+          <strong>BACKSPIN</strong>
+          <small>LOCAL DJ SYSTEM</small>
+        </span>
+      </a>
+      <div class="master-strip">
+        <label>MASTER <input id="masterVolume" type="range" min="0" max="1" step=".01" value=".8"></label>
+        <div class="master-meter" aria-label="Master output meter">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <button id="updateButton" class="status-button update-button" title="Check for updates">↻ UP TO DATE</button>
+        <button id="audioButton" class="status-button"><span></span> AUDIO READY</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="decks" aria-label="DJ decks">
+        <article class="deck deck-a" data-deck="a">
+          <div class="deck-heading">
+            <span class="deck-letter">A</span>
+            <div class="track-heading">
+              <h2 data-role="title">Load a track</h2>
+              <p data-role="artist">Drag from the library or use LOAD</p>
+            </div>
+            <button class="eject" data-action="eject" aria-label="Eject track">×</button>
+          </div>
+          <div class="wave-wrap">
+            <canvas class="waveform" data-role="waveform"></canvas>
+            <div class="wave-playhead"></div>
+            <div class="timecode">
+              <span data-role="elapsed">00:00.0</span>
+              <span data-role="remaining">−00:00.0</span>
+            </div>
+          </div>
+          <div class="deck-body">
+            <div class="tempo-column">
+              <div class="bpm-readout"><strong data-role="bpm">—</strong><small>BPM</small></div>
+              <input class="pitch-slider" data-control="pitch" type="range" min="-16" max="16" step=".1" value="0" orient="vertical">
+              <button class="pitch-reset" data-action="pitch-reset">0.0%</button>
+            </div>
+            <div class="platter-wrap">
+              <div class="platter" data-role="platter">
+                <div class="record-grooves"></div>
+                <div class="record-label"><span>BACK<br>SPIN</span></div>
+                <i class="needle-mark"></i>
+              </div>
+              <div class="transport">
+                <button class="cue" data-action="cue">CUE</button>
+                <button class="play" data-action="play"><span>▶</span> PLAY</button>
+                <button class="sync" data-action="sync">SYNC</button>
+              </div>
+            </div>
+            <div class="mixer-strip">
+              <label class="knob-control"><span>GAIN</span><input data-control="gain" type="range" min="0" max="2" step=".01" value="1"></label>
+              <label class="knob-control"><span>HIGH</span><input data-control="high" type="range" min="-24" max="12" step=".5" value="0"></label>
+              <label class="knob-control"><span>MID</span><input data-control="mid" type="range" min="-24" max="12" step=".5" value="0"></label>
+              <label class="knob-control"><span>LOW</span><input data-control="low" type="range" min="-24" max="12" step=".5" value="0"></label>
+              <label class="channel-volume"><span>VOL</span><input data-control="volume" type="range" min="0" max="1.2" step=".01" value=".85" orient="vertical"></label>
+            </div>
+          </div>
+          <div class="hot-cues">
+            <span>HOT CUES</span>
+            <button data-hotcue="0">1</button><button data-hotcue="1">2</button><button data-hotcue="2">3</button><button data-hotcue="3">4</button>
+            <button class="load-deck" data-action="load">LOAD A</button>
+          </div>
+        </article>
+
+        <section class="center-mixer" aria-label="Mixer">
+          <div class="mixer-label"><span></span>MIXER<span></span></div>
+          <div class="vu-pair"><div class="vu a"></div><div class="vu b"></div></div>
+          <div class="fx-panel">
+            <p>FILTER FX</p>
+            <label class="big-knob"><input id="filterKnob" type="range" min="-1" max="1" step=".01" value="0"><span>LPF&nbsp;&nbsp; HPF</span></label>
+            <select id="fxSelect" aria-label="Effect">
+              <option value="none">FX OFF</option>
+              <option value="echo">ECHO</option>
+              <option value="reverb">SPACE</option>
+            </select>
+          </div>
+          <div class="crossfader-wrap">
+            <span>A</span>
+            <input id="crossfader" type="range" min="0" max="1" step=".01" value=".5">
+            <span>B</span>
+            <small>CROSSFADER</small>
+          </div>
+          <button id="recordButton" class="record-button"><i></i> RECORD</button>
+        </section>
+
+        <article class="deck deck-b" data-deck="b">
+          <div class="deck-heading">
+            <span class="deck-letter">B</span>
+            <div class="track-heading"><h2 data-role="title">Load a track</h2><p data-role="artist">Drag from the library or use LOAD</p></div>
+            <button class="eject" data-action="eject" aria-label="Eject track">×</button>
+          </div>
+          <div class="wave-wrap">
+            <canvas class="waveform" data-role="waveform"></canvas>
+            <div class="wave-playhead"></div>
+            <div class="timecode"><span data-role="elapsed">00:00.0</span><span data-role="remaining">−00:00.0</span></div>
+          </div>
+          <div class="deck-body">
+            <div class="mixer-strip">
+              <label class="knob-control"><span>GAIN</span><input data-control="gain" type="range" min="0" max="2" step=".01" value="1"></label>
+              <label class="knob-control"><span>HIGH</span><input data-control="high" type="range" min="-24" max="12" step=".5" value="0"></label>
+              <label class="knob-control"><span>MID</span><input data-control="mid" type="range" min="-24" max="12" step=".5" value="0"></label>
+              <label class="knob-control"><span>LOW</span><input data-control="low" type="range" min="-24" max="12" step=".5" value="0"></label>
+              <label class="channel-volume"><span>VOL</span><input data-control="volume" type="range" min="0" max="1.2" step=".01" value=".85" orient="vertical"></label>
+            </div>
+            <div class="platter-wrap">
+              <div class="platter" data-role="platter"><div class="record-grooves"></div><div class="record-label"><span>BACK<br>SPIN</span></div><i class="needle-mark"></i></div>
+              <div class="transport"><button class="cue" data-action="cue">CUE</button><button class="play" data-action="play"><span>▶</span> PLAY</button><button class="sync" data-action="sync">SYNC</button></div>
+            </div>
+            <div class="tempo-column">
+              <div class="bpm-readout"><strong data-role="bpm">—</strong><small>BPM</small></div>
+              <input class="pitch-slider" data-control="pitch" type="range" min="-16" max="16" step=".1" value="0" orient="vertical">
+              <button class="pitch-reset" data-action="pitch-reset">0.0%</button>
+            </div>
+          </div>
+          <div class="hot-cues">
+            <button class="load-deck" data-action="load">LOAD B</button>
+            <span>HOT CUES</span><button data-hotcue="0">1</button><button data-hotcue="1">2</button><button data-hotcue="2">3</button><button data-hotcue="3">4</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="browser-panel">
+        <aside class="sidebar">
+          <button id="addFolder" class="add-folder"><span>＋</span> ADD MUSIC FOLDER</button>
+          <button id="addFiles" class="add-files"><span>＋</span> ADD MUSIC FILES</button>
+          <nav>
+            <button class="active" data-view="all"><span>♫</span> ALL TRACKS <b id="trackCount">0</b></button>
+            <button data-view="suggested"><span>✦</span> SMART PICKS</button>
+            <button data-view="favorites"><span>♥</span> FAVORITES</button>
+          </nav>
+          <div class="crate-info">
+            <p>YOUR MUSIC STAYS HERE</p>
+            <small>Backspin reads audio locally. Nothing is uploaded.</small>
+          </div>
+        </aside>
+        <div class="library">
+          <div class="library-toolbar">
+            <div>
+              <h3 id="libraryTitle">ALL TRACKS</h3>
+              <p id="libraryHint">Drop a folder or audio files anywhere to begin</p>
+            </div>
+            <label class="search">⌕ <input id="searchInput" type="search" placeholder="Search tracks, artists..."></label>
+            <select id="sortSelect" aria-label="Sort tracks">
+              <option value="title">TITLE</option>
+              <option value="bpm">BPM</option>
+              <option value="duration">LENGTH</option>
+            </select>
+          </div>
+          <div class="track-table-wrap">
+            <table>
+              <thead><tr><th></th><th>TITLE</th><th>ARTIST</th><th>BPM</th><th>KEY</th><th>LENGTH</th><th>ENERGY</th><th></th></tr></thead>
+              <tbody id="trackList"></tbody>
+            </table>
+            <div id="emptyState" class="empty-state">
+              <div class="empty-record">♫</div>
+              <h3>YOUR CRATE IS EMPTY</h3>
+              <p>Add a music folder or drop MP3, WAV, M4A, AAC, FLAC, or OGG files here.</p>
+              <button id="emptyAdd">CHOOSE MUSIC</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer><span>BACKSPIN v0.1.2 · WINDOWS</span><span>SPACE play focused deck · 1–4 hot cues · S sync</span><span id="footerStatus">READY</span></footer>
+  </div>
+  <input id="filePicker" type="file" accept="audio/*,.flac" webkitdirectory directory multiple hidden>
+  <script src="app.js"></script>
+</body>
+</html>

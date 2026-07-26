@@ -1,0 +1,57 @@
+{
+  "name": "backspin-dj",
+  "version": "0.1.2",
+  "description": "A free, local-first two-deck DJ app for Windows.",
+  "main": "electron-main.js",
+  "author": "Backspin",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis",
+    "release": "electron-builder --win nsis --publish always",
+    "pack": "electron-builder --dir"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.backspin.dj",
+    "productName": "Backspin",
+    "asar": true,
+    "files": [
+      "index.html",
+      "styles.css",
+      "app.js",
+      "electron-main.js",
+      "library-scan.js",
+      "preload.js"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "xyciasav",
+      "repo": "backspin",
+      "releaseType": "release"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
