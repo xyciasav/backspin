@@ -31,8 +31,8 @@ Installed builds check the public GitHub Releases feed on launch. Updates downlo
 Maintainers publish a release by updating the version in `package.json` and pushing a matching tag:
 
 ```powershell
-git tag v0.1.3
-git push origin v0.1.3
+git tag v0.1.4
+git push origin v0.1.4
 ```
 
 ## Current features
